@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { WidgetModel } from "@/lib/models/Widget";
 
@@ -11,11 +11,11 @@ const corsHeaders = {
 };
 
 type Params = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export async function GET(_: Request, { params }: Params) {
-  const { id } = params;
+export async function GET(_request: NextRequest, { params }: Params) {
+  const { id } = await params;
   if (!id || id.length > 32) {
     return NextResponse.json(
       { error: "Invalid widget id" },
