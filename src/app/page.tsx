@@ -1,12 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactElement } from "react";
-import {
-  FaEnvelope,
-  FaFacebookMessenger,
-  FaTelegramPlane,
-  FaWhatsapp,
-} from "react-icons/fa";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import type { WidgetConfig, WidgetPlatform } from "@/types/widget";
 
 type DesignerTab = "bubble" | "widget";
@@ -44,7 +39,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
   telegram: {
     name: "Telegram Widget",
     platform: "telegram",
-    contact: { username: "your_telegram" },
+    contact: { username: "" },
     defaultMessage: "Hi! I’d love to learn more.",
     bubble: {
       size: { width: 64, height: 64 },
@@ -73,7 +68,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
   messenger: {
     name: "Messenger Widget",
     platform: "messenger",
-    contact: { pageId: "yourpage" },
+    contact: { pageId: "" },
     defaultMessage: "Hi! I want to connect.",
     bubble: {
       size: { width: 64, height: 64 },
@@ -102,7 +97,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
   email: {
     name: "Email Widget",
     platform: "email",
-    contact: { email: "hello@example.com", subject: "Support request" },
+    contact: { email: "", subject: "" },
     defaultMessage: "Hi! I’d like to know more.",
     bubble: {
       size: { width: 64, height: 64 },
@@ -130,13 +125,6 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
   },
 };
 
-const platformIcons: Record<WidgetPlatform, ReactElement> = {
-  whatsapp: <FaWhatsapp />,
-  telegram: <FaTelegramPlane />,
-  messenger: <FaFacebookMessenger />,
-  email: <FaEnvelope />,
-};
-
 const copyToClipboard = async (value: string) => {
   await navigator.clipboard.writeText(value);
 };
@@ -149,13 +137,30 @@ const brandingLogo =
   "https://dummyimage.com/64x64/0f172a/ffffff&text=B";
 const brandingLink =
   process.env.NEXT_PUBLIC_BRANDING_LINK || "https://botrix.ai";
+const platformIconUrls = {
+  whatsapp:
+    process.env.NEXT_PUBLIC_WHATSAPP_ICON_URL ||
+    "https://dummyimage.com/64x64/25d366/ffffff&text=W",
+  telegram:
+    process.env.NEXT_PUBLIC_TELEGRAM_ICON_URL ||
+    "https://dummyimage.com/64x64/2aabee/ffffff&text=T",
+  messenger:
+    process.env.NEXT_PUBLIC_MESSENGER_ICON_URL ||
+    "https://dummyimage.com/64x64/0084ff/ffffff&text=M",
+  email:
+    process.env.NEXT_PUBLIC_EMAIL_ICON_URL ||
+    "https://dummyimage.com/64x64/0f172a/ffffff&text=E",
+};
 
 const buildEmbedCode = (widgetId: string) =>
   `<script src="${appUrl}/widget.js" data-widget-id="${widgetId}" async></script>`;
 
 function WidgetPreview({ config }: { config: WidgetConfig }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [showTyping, setShowTyping] = useState(false);
+  const [greetingText, setGreetingText] = useState("");
+  const [greetingTime, setGreetingTime] = useState("");
 
   const bubblePosition = useMemo(() => {
     return config.bubble.position === "bottom-left"
@@ -163,100 +168,151 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
       : { right: config.bubble.offsetX, left: "auto" };
   }, [config.bubble.offsetX, config.bubble.position]);
 
+  useEffect(() => {
+    if (!open) {
+      setShowTyping(false);
+      setGreetingText("");
+      setGreetingTime("");
+      return;
+    }
+
+    setShowTyping(true);
+    setGreetingText("");
+    setGreetingTime("");
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const timeout = window.setTimeout(() => {
+      setShowTyping(false);
+      setGreetingText(config.widget.greetingText);
+      setGreetingTime(`${hours}:${minutes}`);
+    }, 700);
+
+    return () => window.clearTimeout(timeout);
+  }, [open, config.widget.greetingText]);
+
   return (
     <div className="relative h-full w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-50">
-      <div
-        className="absolute"
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="absolute flex items-center justify-center transition"
         style={{
           bottom: config.bubble.offsetY,
           ...bubblePosition,
+          width: config.bubble.size.width,
+          height: config.bubble.size.height,
+          borderRadius: config.bubble.shape === "circle" ? 999 : 18,
+          background: config.bubble.backgroundColor,
+          boxShadow: config.bubble.shadow
+            ? "0 12px 24px rgba(15, 23, 42, 0.18)"
+            : "none",
+          border: "none",
+          padding: 0,
         }}
       >
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="flex items-center justify-center transition"
+        <img
+          src={platformIconUrls[config.platform] || platformIconUrls.email}
+          alt={`${config.platform} icon`}
+          className="object-contain"
           style={{
-            width: config.bubble.size.width,
-            height: config.bubble.size.height,
-            borderRadius: config.bubble.shape === "circle" ? 999 : 18,
-            background: config.bubble.backgroundColor,
-            color: config.bubble.iconColor,
-            boxShadow: config.bubble.shadow
-              ? "0 12px 24px rgba(15, 23, 42, 0.18)"
-              : "none",
+            width: config.bubble.iconSize,
+            height: config.bubble.iconSize,
           }}
-        >
-          <span style={{ fontSize: config.bubble.iconSize }}>
-            {platformIcons[config.platform]}
-          </span>
-        </button>
-      </div>
+        />
+      </button>
 
       {open && (
         <div
           className="absolute overflow-hidden rounded-2xl bg-white shadow-2xl"
           style={{
-            width: "min(92vw, " + config.widget.width + "px)",
-            height: "min(70vh, " + config.widget.height + "px)",
-            bottom: "min(24px, " + (config.bubble.offsetY + config.bubble.size.height + 16) + "px)",
+            width: config.widget.width,
+            height: config.widget.height,
+            maxWidth: "calc(100% - 32px)",
+            maxHeight: "calc(100% - 120px)",
+            bottom: config.bubble.offsetY + config.bubble.size.height + 14,
             ...bubblePosition,
             fontSize: config.widget.fontSize,
           }}
         >
           <div
-            className="flex items-center gap-3 px-4 py-3 text-white"
+            className="flex items-center gap-3 px-4 py-4 text-white"
             style={{ background: config.widget.headerBgColor }}
           >
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-white/20">
-              {config.widget.profileImage ? (
+            {config.widget.profileImage ? (
+              <img
+                src={config.widget.profileImage}
+                alt="Profile"
+                className="h-9 w-9 rounded-full bg-white object-cover"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                 <img
-                  src={config.widget.profileImage}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
+                  src={platformIconUrls[config.platform] || platformIconUrls.email}
+                  alt={`${config.platform} icon`}
+                  className="h-[22px] w-[22px] object-contain"
                 />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xl">
-                  {platformIcons[config.platform]}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
             <div>
-              <p className="text-sm font-semibold">
+              <p className="text-[15px] font-semibold">
                 {config.widget.headingText}
               </p>
-              <p className="text-xs text-white/80">
+              <p className="text-[12.5px] text-white/80">
                 {config.widget.statusText}
               </p>
             </div>
           </div>
-          <div className="flex h-[calc(100%-120px)] flex-col gap-3 overflow-y-auto bg-slate-50 px-4 py-3 text-slate-900">
-            <div className="max-w-[85%] rounded-2xl bg-white p-3 shadow-sm">
-              {config.widget.greetingText}
+          <div
+            className="flex h-[calc(100%-122px)] flex-col gap-3 overflow-y-auto bg-slate-50 px-4 py-4 text-slate-900"
+            style={{
+              backgroundImage: "url(/chat-bg.jpg)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          >
+            <div className="flex max-w-[90%] flex-col gap-1 rounded-xl bg-white px-3 py-2 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
+              {showTyping ? (
+                <div className="inline-flex h-4 items-center gap-2">
+                  <span className="widget-typing-dot" />
+                  <span className="widget-typing-dot" />
+                  <span className="widget-typing-dot" />
+                </div>
+              ) : (
+                <>
+                  <div>{greetingText}</div>
+                  {greetingTime && (
+                    <div className="text-right text-[11px] text-slate-400">
+                      {greetingTime}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-3">
+          <div className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-1">
             <input
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder={config.widget.inputPlaceholder}
-              className="h-10 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none"
+              className="h-10 flex-1 rounded-full border border-slate-200 px-3 text-[14.5px] outline-none"
             />
             <button
               type="button"
-              className="h-10 rounded-lg px-4 text-sm font-semibold text-white"
+              className="h-10 rounded-full px-3  sm:px-4   text-sm font-semibold text-white"
               style={{ background: config.widget.buttonColor }}
             >
               Send
             </button>
           </div>
-          <div className="flex items-center justify-center gap-2 border-t border-slate-200 bg-white py-2 text-[11px] text-slate-500">
+          <div className="flex items-center justify-center gap-2 border-t border-slate-200 bg-white py-3 text-xs text-slate-400">
             <span>Powered by</span>
             <a href={brandingLink} target="_blank" rel="noreferrer">
               <img
                 src={brandingLogo}
                 alt="Powered by logo"
-                className="h-5 w-5 object-contain"
+                className="h-6 w-16 object-contain"
               />
             </a>
           </div>
@@ -379,9 +435,12 @@ export default function Home() {
       <div className="mx-auto w-[90%] px-4 py-8">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
-            <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+            {/* <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
               Botrix Widgets
-            </span>
+            </span> */}
+             <div>
+               <Image src="/BotrixAI_Light.avif" alt="Botrix" width={100} height={100} />
+             </div>
             <h1 className="text-4xl font-semibold text-slate-900 sm:text-5xl">
               Social Chat Widget Builder
             </h1>
@@ -399,14 +458,16 @@ export default function Home() {
           </button>
         </div>
         {toast && (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 shadow-sm">
-            {toast}
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-4 py-6">
+            <div className="pointer-events-auto w-full max-w-sm rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 shadow-lg">
+              {toast}
+            </div>
           </div>
         )}
 
         <main className="grid grid-cols-1 gap-10 lg:grid-cols-[1.85fr_1fr]">
           <section className="space-y-6">
-            <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow-lg shadow-slate-200/50 backdrop-blur">
+            <div className="lg:rounded-3xl lg:border lg:border-white/60 lg:bg-white/90 lg:p-6 lg:shadow-lg lg:shadow-slate-200/50 lg:backdrop-blur">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -420,7 +481,7 @@ export default function Home() {
                   Preview
                 </span>
               </div>
-              <div className="mt-5 h-[72vh] max-h-[560px] min-h-[420px] rounded-2xl border border-slate-100 bg-slate-50">
+              <div className="mt-5 h-[72vh] max-h-[560px] min-h-[420px] rounded-none border-0 bg-slate-50 lg:rounded-2xl lg:border lg:border-slate-100">
                 <WidgetPreview config={config} />
               </div>
             </div>
@@ -492,9 +553,9 @@ export default function Home() {
                   Icon
                 </button>
               </div>
-              <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-500 shadow-lg shadow-slate-200/50">
+              {/* <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-500 shadow-lg shadow-slate-200/50">
                 Platform Setup
-              </div>
+              </div> */}
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -792,7 +853,7 @@ export default function Home() {
                       </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       <label className="space-y-2 text-sm font-medium">
                         Offset X
                         <input

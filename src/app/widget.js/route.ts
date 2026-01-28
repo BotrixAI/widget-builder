@@ -94,7 +94,7 @@ const widgetScript = `
       .header svg { width: 22px; height: 22px; }
       .heading { font-weight: 600; margin: 0; font-size: 15px; }
       .status { margin: 2px 0 0; font-size: 12.5px; opacity: 0.85; }
-      .body { padding: 16px; font-size: 15px; color: #0f172a; background: #f8fafc; flex: 1; }
+      .body { padding: 16px; font-size: 15px; color: #0f172a; background: #f8fafc; flex: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
       .bubble-text { padding: 10px 12px; background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); max-width: 90%; display: flex; flex-direction: column; gap: 6px; }
       .bubble-time { font-size: 11px; color: #94a3b8; text-align: right; }
       .typing { display: inline-flex; align-items: center; gap: 6px; height: 16px; }
@@ -103,7 +103,7 @@ const widgetScript = `
       .typing span:nth-child(3) { animation-delay: 0.4s; }
       @keyframes typing { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-3px); opacity: 1; } }
       .footer { padding: 2px 12px 0; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: #fff; }
-      .branding { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 10px 12px; font-size: 12px; color: #94a3b8; background: #fff; border-top: 1px solid #e2e8f0; }
+      .branding { display: flex; align-items: center; justify-content: center; gap: 1px; padding: 10px 10px 12px; font-size: 12px; color: #94a3b8; background: #fff; border-top: 1px solid #e2e8f0; }
       .branding a { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
       .branding img { width: 64px; height: 24px; object-fit: contain; }
       .bubble img { width: 60%; height: 60%; object-fit: contain; }
@@ -218,6 +218,7 @@ const widgetScript = `
       panel.style.width = \`\${config.widget.width}px\`;
       panel.style.height = \`\${config.widget.height}px\`;
       header.style.background = config.widget.headerBgColor;
+      body.style.backgroundImage = \`url(\${baseUrl}/chat-bg.jpg)\`;
       heading.textContent = config.widget.headingText;
       status.textContent = config.widget.statusText;
       headerImage.src = config.widget.profileImage || '';
