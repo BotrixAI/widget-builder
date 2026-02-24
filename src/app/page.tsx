@@ -1,6 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import {
+  FaEnvelope,
+  FaFacebookMessenger,
+  FaTelegramPlane,
+  FaWhatsapp,
+} from "react-icons/fa";
 import { useEffect, useMemo, useState } from "react";
 import type { WidgetConfig, WidgetPlatform } from "@/types/widget";
 
@@ -13,7 +19,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
     contact: { phone: "" },
     defaultMessage: "Hi!",
     bubble: {
-      size: { width: 64, height: 64 },
+      size: { width: 52, height: 52 },
       shape: "circle",
       iconSize: 28,
       iconColor: "#ffffff",
@@ -42,7 +48,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
     contact: { username: "" },
     defaultMessage: "Hi! I’d love to learn more.",
     bubble: {
-      size: { width: 64, height: 64 },
+      size: { width: 52, height: 52 },
       shape: "circle",
       iconSize: 28,
       iconColor: "#ffffff",
@@ -71,7 +77,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
     contact: { pageId: "" },
     defaultMessage: "Hi! I want to connect.",
     bubble: {
-      size: { width: 64, height: 64 },
+      size: { width: 52, height: 52 },
       shape: "circle",
       iconSize: 28,
       iconColor: "#ffffff",
@@ -100,7 +106,7 @@ const platformDefaults: Record<WidgetPlatform, WidgetConfig> = {
     contact: { email: "", subject: "" },
     defaultMessage: "Hi! I’d like to know more.",
     bubble: {
-      size: { width: 64, height: 64 },
+      size: { width: 52, height: 52 },
       shape: "circle",
       iconSize: 28,
       iconColor: "#ffffff",
@@ -152,6 +158,13 @@ const platformIconUrls = {
     "https://dummyimage.com/64x64/0f172a/ffffff&text=E",
 };
 
+const platformIcons = {
+  whatsapp: FaWhatsapp,
+  telegram: FaTelegramPlane,
+  messenger: FaFacebookMessenger,
+  email: FaEnvelope,
+};
+
 const buildEmbedCode = (widgetId: string) =>
   `<script src="${appUrl}/widget.js" data-widget-id="${widgetId}" async></script>`;
 
@@ -161,6 +174,11 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
   const [showTyping, setShowTyping] = useState(false);
   const [greetingText, setGreetingText] = useState("");
   const [greetingTime, setGreetingTime] = useState("");
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
+
+  useEffect(() => {
+    setProfileImageFailed(false);
+  }, [config.widget.profileImage]);
 
   const bubblePosition = useMemo(() => {
     return config.bubble.position === "bottom-left"
@@ -192,7 +210,7 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
   }, [open, config.widget.greetingText]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-50">
+    <div className="relative h-full w-full overflow-visible rounded-3xl border border-slate-200 bg-slate-50 sm:overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -223,27 +241,28 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
       </button>
 
       {open && (
-        <div
-          className="absolute overflow-hidden rounded-2xl bg-white shadow-2xl"
-          style={{
-            width: config.widget.width,
-            height: config.widget.height,
-            maxWidth: "calc(100% - 32px)",
-            maxHeight: "calc(100% - 120px)",
-            bottom: config.bubble.offsetY + config.bubble.size.height + 14,
-            ...bubblePosition,
-            fontSize: config.widget.fontSize,
-          }}
-        >
+          <div
+            className="absolute flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            style={{
+              width: `min(100%, ${config.widget.width}px)`,
+              height: config.widget.height,
+              maxWidth: "calc(100% - 16px)",
+              maxHeight: "calc(100% - 100px)",
+              bottom: config.bubble.offsetY + config.bubble.size.height + 14,
+              ...bubblePosition,
+              fontSize: config.widget.fontSize,
+            }}
+          >
           <div
             className="flex items-center gap-3 px-4 py-4 text-white"
             style={{ background: config.widget.headerBgColor }}
           >
-            {config.widget.profileImage ? (
+            {config.widget.profileImage && !profileImageFailed ? (
               <img
                 src={config.widget.profileImage}
                 alt="Profile"
                 className="h-9 w-9 rounded-full bg-white object-cover"
+                onError={() => setProfileImageFailed(true)}
               />
             ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
@@ -264,7 +283,7 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
             </div>
           </div>
           <div
-            className="flex h-[calc(100%-122px)] flex-col gap-3 overflow-y-auto bg-slate-50 px-4 py-4 text-slate-900"
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 px-4 py-4 text-slate-900"
             style={{
               backgroundImage: "url(/chat-bg.jpg)",
               backgroundSize: "cover",
@@ -296,23 +315,24 @@ function WidgetPreview({ config }: { config: WidgetConfig }) {
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder={config.widget.inputPlaceholder}
-              className="h-10 flex-1 rounded-full border border-slate-200 px-3 text-[14.5px] outline-none"
+              className="h-10 min-w-0 flex-1 rounded-full border border-slate-200 px-3 text-[14.5px] outline-none"
             />
             <button
               type="button"
-              className="h-10 rounded-full px-3  sm:px-4   text-sm font-semibold text-white"
+              className="h-10 shrink-0 rounded-full px-3 text-sm font-semibold text-white sm:px-4"
               style={{ background: config.widget.buttonColor }}
             >
               Send
             </button>
+            
           </div>
-          <div className="flex items-center justify-center gap-2 border-t border-slate-200 bg-white py-3 text-xs text-slate-400">
+          <div className="mt-auto flex items-center justify-center gap-2 border-t border-slate-200 bg-white py-2 text-[11px] text-slate-400">
             <span>Powered by</span>
             <a href={brandingLink} target="_blank" rel="noreferrer">
               <img
                 src={brandingLogo}
                 alt="Powered by logo"
-                className="h-6 w-16 object-contain"
+                className="h-4 w-12 object-contain"
               />
             </a>
           </div>
@@ -332,6 +352,7 @@ export default function Home() {
   const [status, setStatus] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string>("");
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
   const embedCode = widgetId ? buildEmbedCode(widgetId) : "";
 
@@ -378,14 +399,25 @@ export default function Home() {
 
     const reader = new FileReader();
     reader.onload = async () => {
+      const dataUrl = String(reader.result || "");
+      if (dataUrl) {
+        updateConfig((prev) => ({
+          ...prev,
+          widget: { ...prev.widget, profileImage: dataUrl },
+        }));
+      }
       try {
+        setIsUploadingProfile(true);
         setStatus("Uploading profile image...");
         const response = await fetch("/api/uploads/profile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl: String(reader.result) }),
+          body: JSON.stringify({ dataUrl }),
         });
         if (!response.ok) {
+          if (response.status === 413) {
+            throw new Error("Image too large. Please use a smaller file.");
+          }
           throw new Error("Upload failed");
         }
         const data = await response.json();
@@ -395,13 +427,31 @@ export default function Home() {
         }));
         setStatus("Profile image uploaded.");
       } catch (error) {
-        setStatus("Profile upload failed. Please try again.");
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Profile upload failed. Using local preview.";
+        setStatus(message);
+      } finally {
+        setIsUploadingProfile(false);
       }
     };
     reader.readAsDataURL(file);
   };
 
   const saveWidget = async () => {
+    if (isUploadingProfile) {
+      setToast("Profile image is still uploading. Please wait.");
+      setTimeout(() => setToast(""), 2500);
+      return;
+    }
+    if (config.widget.profileImage?.startsWith("data:image/")) {
+      setToast(
+        "Profile image upload failed or is too large. Please upload a smaller image."
+      );
+      setTimeout(() => setToast(""), 3000);
+      return;
+    }
     const validationError = validateConfig();
     if (validationError) {
       setToast(validationError);
@@ -434,20 +484,39 @@ export default function Home() {
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50 text-slate-900">
       <div className="mx-auto w-[90%] px-4 py-8">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-2">
+          <div className="space-y-2">
             {/* <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
               Botrix Widgets
             </span> */}
-             <div>
-               <Image src="/BotrixAI_Light.avif" alt="Botrix" width={100} height={100} />
-             </div>
-            <h1 className="text-4xl font-semibold text-slate-900 sm:text-5xl">
-              Social Chat Widget Builder
-            </h1>
-            <p className="max-w-xl text-lg text-slate-500">
-              Design a branded chat bubble and widget UI, then embed it on any
-              site with a single script tag.
-            </p>
+           <div className="w-full flex justify-end">
+  <div className="text-right space-y-2">
+    
+    {/* Title */}
+    <h1 className="text-2xl font-semibold text-green-800 sm:text-4xl lg:text-5xl">
+      Widgets Pro
+    </h1>
+
+    {/* Powered By */}
+    <div className="flex items-center justify-end gap-2 text-xs sm:text-sm text-slate-500">
+      <span>Powered by</span>
+      <a
+        href="https://botrixai.com/"
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center"
+      >
+        <Image
+          src="/BotrixAI_Light.avif"
+          alt="Botrix"
+          width={60}
+          height={60}
+          className="object-contain"
+        />
+      </a>
+    </div>
+
+  </div>
+</div>
           </div>
           <button
             type="button"
@@ -481,7 +550,7 @@ export default function Home() {
                   Preview
                 </span>
               </div>
-              <div className="mt-5 h-[72vh] max-h-[560px] min-h-[420px] rounded-none border-0 bg-slate-50 lg:rounded-2xl lg:border lg:border-slate-100">
+              <div className="mt-5 h-[60vh] max-h-[520px] min-h-[320px] rounded-none border-0 bg-slate-50 sm:min-h-[360px] lg:h-[72vh] lg:max-h-[560px] lg:min-h-[420px] lg:rounded-2xl lg:border lg:border-slate-100">
                 <WidgetPreview config={config} />
               </div>
             </div>
@@ -529,7 +598,7 @@ export default function Home() {
 
           <aside className="space-y-6">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex rounded-full bg-white/90 p-1 text-base shadow-lg shadow-slate-200/50">
+              <div className="flex w-full rounded-full bg-white/90 p-1 text-base shadow-lg shadow-slate-200/50">
                 <button
                   type="button"
                   onClick={() => setDesignerTab("widget")}
@@ -558,7 +627,7 @@ export default function Home() {
               </div> */}
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <div className="w-full">
               <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow-lg shadow-slate-200/50">
                 {designerTab === "widget" ? (
                   <div className="space-y-5">
@@ -698,20 +767,13 @@ export default function Home() {
                           }
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                         />
-                        <input
-                          value={config.widget.profileImage}
-                          onChange={(event) =>
-                            updateConfig((prev) => ({
-                              ...prev,
-                              widget: {
-                                ...prev.widget,
-                                profileImage: event.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Profile image URL"
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => handleProfileUpload(null)}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
+                        >
+                          Remove image
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -912,128 +974,142 @@ export default function Home() {
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow-lg shadow-slate-200/50">
-                <h2 className="text-base font-semibold">Platform Setup</h2>
-                <div className="mt-4 space-y-3">
-                  <select
-                    value={platform}
-                    onChange={(event) =>
-                      handlePlatformChange(
-                        event.target.value as WidgetPlatform
-                      )
-                    }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                  >
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="telegram">Telegram</option>
-                    <option value="messenger">Messenger</option>
-                    <option value="email">Email</option>
-                  </select>
+            <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow-lg shadow-slate-200/50">
+              <h2 className="text-base font-semibold">Platform Setup</h2>
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {(
+                    ["whatsapp", "telegram", "messenger", "email"] as WidgetPlatform[]
+                  ).map((value) => {
+                    const PlatformIcon = platformIcons[value];
+                    return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handlePlatformChange(value)}
+                      aria-pressed={platform === value}
+                        className={`flex items-center gap-2 rounded-xl border px-2 py-2 text-xs font-semibold transition sm:gap-3 sm:px-3 sm:text-sm ${
+                        platform === value
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200"
+                      }`}
+                    >
+                      <span
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-base text-slate-600 sm:h-8 sm:w-8 sm:text-lg"
+                        aria-hidden="true"
+                      >
+                        <PlatformIcon />
+                      </span>
+                      <span className="capitalize">{value}</span>
+                    </button>
+                  );
+                  })}
+                </div>
+                <input
+                  value={config.name}
+                  onChange={(event) =>
+                    updateConfig((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
+                  }
+                  placeholder="Widget name"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+
+                {platform === "whatsapp" && (
                   <input
-                    value={config.name}
+                    value={config.contact.phone || ""}
                     onChange={(event) =>
                       updateConfig((prev) => ({
                         ...prev,
-                        name: event.target.value,
+                        contact: {
+                          ...prev.contact,
+                          phone: event.target.value,
+                        },
                       }))
                     }
-                    placeholder="Widget name"
+                    placeholder="Phone (e.g., +1...)"
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                   />
-
-                  {platform === "whatsapp" && (
-                    <input
-                      value={config.contact.phone || ""}
-                      onChange={(event) =>
-                        updateConfig((prev) => ({
-                          ...prev,
-                          contact: {
-                            ...prev.contact,
-                            phone: event.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Phone (e.g., +1...)"
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    />
-                  )}
-                  {platform === "telegram" && (
-                    <input
-                      value={config.contact.username || ""}
-                      onChange={(event) =>
-                        updateConfig((prev) => ({
-                          ...prev,
-                          contact: {
-                            ...prev.contact,
-                            username: event.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Telegram username"
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    />
-                  )}
-                  {platform === "messenger" && (
-                    <input
-                      value={config.contact.pageId || ""}
-                      onChange={(event) =>
-                        updateConfig((prev) => ({
-                          ...prev,
-                          contact: {
-                            ...prev.contact,
-                            pageId: event.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Facebook Page ID"
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    />
-                  )}
-                  {platform === "email" && (
-                    <>
-                      <input
-                        value={config.contact.email || ""}
-                        onChange={(event) =>
-                          updateConfig((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              email: event.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Support email"
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={config.contact.subject || ""}
-                        onChange={(event) =>
-                          updateConfig((prev) => ({
-                            ...prev,
-                            contact: {
-                              ...prev.contact,
-                              subject: event.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Email subject"
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                      />
-                    </>
-                  )}
-                  <textarea
-                    value={config.defaultMessage}
+                )}
+                {platform === "telegram" && (
+                  <input
+                    value={config.contact.username || ""}
                     onChange={(event) =>
                       updateConfig((prev) => ({
                         ...prev,
-                        defaultMessage: event.target.value,
+                        contact: {
+                          ...prev.contact,
+                          username: event.target.value,
+                        },
                       }))
                     }
-                    placeholder="Default message"
-                    className="h-24 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm"
+                    placeholder="Telegram username"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                   />
-                </div>
+                )}
+                {platform === "messenger" && (
+                  <input
+                    value={config.contact.pageId || ""}
+                    onChange={(event) =>
+                      updateConfig((prev) => ({
+                        ...prev,
+                        contact: {
+                          ...prev.contact,
+                          pageId: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Facebook Page ID"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  />
+                )}
+                {platform === "email" && (
+                  <>
+                    <input
+                      value={config.contact.email || ""}
+                      onChange={(event) =>
+                        updateConfig((prev) => ({
+                          ...prev,
+                          contact: {
+                            ...prev.contact,
+                            email: event.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Support email"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    />
+                    <input
+                      value={config.contact.subject || ""}
+                      onChange={(event) =>
+                        updateConfig((prev) => ({
+                          ...prev,
+                          contact: {
+                            ...prev.contact,
+                            subject: event.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Email subject"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </>
+                )}
+                <textarea
+                  value={config.defaultMessage}
+                  onChange={(event) =>
+                    updateConfig((prev) => ({
+                      ...prev,
+                      defaultMessage: event.target.value,
+                    }))
+                  }
+                  placeholder="Default message"
+                  className="h-24 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm"
+                />
               </div>
             </div>
           </aside>

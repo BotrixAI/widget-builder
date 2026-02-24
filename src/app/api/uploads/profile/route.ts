@@ -4,7 +4,7 @@ import { v2 as cloudinary } from "cloudinary";
 export const runtime = "nodejs";
 
 const MAX_PROFILE_UPLOAD_BYTES = Number(
-  process.env.MAX_PROFILE_UPLOAD_BYTES || 2_000_000
+  process.env.MAX_PROFILE_UPLOAD_BYTES || 5_000_000
 );
 
 cloudinary.config({

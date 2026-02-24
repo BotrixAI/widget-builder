@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { platformIconSvgs } from "@/lib/platformIconSvgs";
 
 const brandingLogo =
   process.env.NEXT_PUBLIC_BRANDING_LOGO ||
@@ -64,15 +65,21 @@ const widgetScript = `
     return [defaultMessage, userMessage].filter(Boolean).join(' ').trim();
   };
 
-  const platformIconUrls = ${JSON.stringify(platformIconUrls)};
+  const platformIconSvgs = ${JSON.stringify(platformIconSvgs)};
 
-  const createPlatformIcon = (platform) => {
-    const img = document.createElement('img');
-    img.alt = platform + ' icon';
-    img.src = platformIconUrls[platform] || platformIconUrls.email;
-    img.decoding = 'async';
-    img.loading = 'lazy';
-    return img;
+  const createInlineIcon = (platform, color) => {
+    const wrapper = document.createElement('span');
+    wrapper.innerHTML = platformIconSvgs[platform] || platformIconSvgs.email;
+    const svg = wrapper.querySelector('svg');
+    if (!svg) {
+      return document.createElement('span');
+    }
+    svg.setAttribute('aria-label', platform + ' icon');
+    svg.setAttribute('role', 'img');
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.color = color || '#fff';
+    return svg;
   };
 
   const mountWidget = (config) => {
@@ -108,8 +115,8 @@ const widgetScript = `
       .branding img { width: 64px; height: 24px; object-fit: contain; }
       .bubble img { width: 60%; height: 60%; object-fit: contain; }
       .header .icon img { width: 22px; height: 22px; object-fit: contain; }
-      .input { flex: 1; padding: 10px 12px; border: 1px solid #cbd5f5; border-radius: 50px; font-size: 14.5px; outline: none; margin:4px 0px;}
-      .send { border: none; color: #fff; padding: 0 16px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 14px; margin:4px 0px;}
+      .input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #cbd5f5; border-radius: 50px; font-size: 14.5px; outline: none; margin:4px 0px;}
+      .send { border: none; color: #fff; padding: 0 16px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 14px; margin:4px 0px; flex-shrink: 0;}
     \`;
     shadow.appendChild(style);
 
@@ -208,7 +215,10 @@ const widgetScript = `
       icon.style.display = 'flex';
       icon.style.alignItems = 'center';
       icon.style.justifyContent = 'center';
-      const bubbleImg = createPlatformIcon(config.platform);
+      const bubbleImg = createInlineIcon(
+        config.platform,
+        config.bubble.iconColor
+      );
       bubbleImg.style.width = \`\${Number(config.bubble.iconSize)}px\`;
       bubbleImg.style.height = \`\${Number(config.bubble.iconSize)}px\`;
       icon.appendChild(bubbleImg);
@@ -221,14 +231,29 @@ const widgetScript = `
       body.style.backgroundImage = \`url(\${baseUrl}/chat-bg.jpg)\`;
       heading.textContent = config.widget.headingText;
       status.textContent = config.widget.statusText;
+      headerImage.onload = null;
+      headerImage.onerror = null;
       headerImage.src = config.widget.profileImage || '';
       headerImage.style.display = config.widget.profileImage ? 'block' : 'none';
       headerIcon.innerHTML = '';
-      const headerImg = createPlatformIcon(config.platform);
+      const headerImg = createInlineIcon(config.platform, '#fff');
       headerImg.style.width = '22px';
       headerImg.style.height = '22px';
       headerIcon.appendChild(headerImg);
       headerIcon.style.display = config.widget.profileImage ? 'none' : 'flex';
+      if (config.widget.profileImage) {
+        headerImage.onerror = () => {
+          headerImage.style.display = 'none';
+          headerIcon.style.display = 'flex';
+        };
+        headerImage.onload = () => {
+          headerImage.style.display = 'block';
+          headerIcon.style.display = 'none';
+        };
+      } else {
+        headerImage.style.display = 'none';
+        headerIcon.style.display = 'flex';
+      }
       if (panel.classList.contains('open')) {
         playTyping();
       }
@@ -269,6 +294,13 @@ const widgetScript = `
 })();
 `;
 
+const corsHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "access-control-allow-private-network": "true",
+};
+
 export async function GET() {
   return new NextResponse(widgetScript, {
     headers: {
@@ -277,7 +309,15 @@ export async function GET() {
         process.env.NODE_ENV === "production"
           ? "public, max-age=3600, stale-while-revalidate=86400"
           : "no-store, max-age=0",
+      ...corsHeaders,
     },
+  });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
   });
 }
 
